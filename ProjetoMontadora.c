@@ -9,6 +9,7 @@
 // duvidas
 // na tabela de visualização como fica o endereço
 // como fica a venda dos carros
+// deletar uma montadora
 
 
 #include <stdio.h> //Biblioteca padrão de entrada/saída, printf scanf.
@@ -64,7 +65,8 @@ int verifica(); //verifica se existe e retorna o registro (qtde)
 void cadastro(loja *p,int qtde); //cadastro struct loja
 void cadastroend(loja *p);
 void grava(loja *p); //grava os dados no ponteiro
-void mostra(loja *p,int qtde);
+void mostra(loja *p, int qtde);
+void buscacnpj(loja *p, int qtde);
 
 // Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main.
 
@@ -92,7 +94,8 @@ do
         case 1: mostra(ploja,qtde);
         break;
 
-        case 2: printf("juninhopernambucacoococo");
+        case 2: buscacnpj(ploja, qtde);
+
         system("pause");
         break;
 
@@ -261,3 +264,43 @@ else
 printf("\n\n");
 system("pause");
 }
+
+void buscacnpj(loja *p, int qtde)
+{
+
+int i, j, achou=0;
+FILE *fptr=NULL;
+char pcnpj[30];
+system("cls");
+printf("Digite o CNPJ que deseja buscar: ");
+gets(pcnpj);
+fflush(stdin);
+
+if((fptr=fopen("concessionaria.bin","rb"))==NULL)
+  printf("\nErro ao abrir o arquivo");
+else
+  {
+  	for(i=0;i<qtde;i++)
+  	  {
+	  	fseek(fptr,i*sizeof(loja),0);
+	  	fread(p,sizeof(loja),1,fptr);
+	  	if(strcmp(pcnpj, p->CNPJ)==0)
+            {
+            system("cls");
+            printf("\nCNPJ Encontrado.");
+            printf("\nNome: %s\nSold: %i\nReserved: %i\n", p->nome, p->sold, p->reserved);
+            for(j=0;j<3;j++)
+                printf("Tabela %i = %c\n", j, (p->tabela.sigla));
+            achou=1;
+            }
+      }
+    fclose(fptr);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+  }
+
+if(achou==0)
+{
+    printf("CNPJ não encontrado! verifique na consulta e tente novamente.");
+}
+printf("\n\n");
+}
+
