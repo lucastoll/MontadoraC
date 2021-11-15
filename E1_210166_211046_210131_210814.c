@@ -1,24 +1,25 @@
-// João Mendes
-// Lucas Fernandes Tolotto
-// Pedro Henrique Todineyb Santos
-// Rafael Ramos do Rosário
+// Grupo 5 TIM2 - Manhã
+// João Matheus de Jesus Mendes - RA 210166
+// Lucas Fernandes Tolotto - RA 211046
+// Pedro Henrique Todineyb Santos - RA 210131
+// Rafael Ramos do Rosário - RA 210814
+
+// duvidas
+// só usar ponteiro pra estrutura ou usar em mais coisas.
+// acentuação nao funciona quando cadastra dados no arquivo, so funciona nos prints normais do menu.
+
+// coisas pra fazer - etapa 1
+// 1 - tratamento inputs (receber só informações validas)
+// 2 - tratamento valor (no print R$120.000,00)
+// 3 - intro animação
+// 4 - função printar carro colorido
 
 // ponteiro -> membro da estrutura
 // estrutura (membro) . dados da estrutura
 
-// duvidas
-// na tabela de visualização como fica o endereço
-// como fica a venda dos carros
-// deletar uma montadora
-// função unica ou uma pra cada
-// printar em tabela
-// typedef duas estruturas
-// só ponteiro pra estrutura ou usar em mais coisas.
-
 #include <stdio.h> //Biblioteca padrão de entrada/saída, printf scanf.
 #include <stdlib.h> //emula o prompt de comando, cls pause.
 #include <locale.h> //acentuação / linguagem
-#include <math.h>  //funções matématicas
 #include <ctype.h> //Ascii e manipulação de caracteres to upper to lower
 #include <string.h> //Funções string
 #include <windows.h> //Cores
@@ -79,27 +80,28 @@ float valor;
 union dadosloja status;
 }montadora;
 
+//portal (ctrl f)
 // Funções antes da main - Funções antes da main - Funções antes da main - Funções antes da main - Funções antes da main - Funções antes da main.
-//portal
 
-//concessionária.bin
+// funções universal
 
-void alocaloja(loja **p, int tam);
-int verificaconc(); //verifica se existe e retorna o registro (qtde)
+void aloca(loja **ploja, montadora **pmontadora, int tam, int seletor);
+int verifica(loja **ploja, montadora **pmontadora, int seletor);
+void creditos();
+
+// funções concessionária.bin
 void cadastroconc(loja *p, int qtde); //cadastro struct loja
 void cadastroend(loja *p);
 void gravaconc(loja *p); //grava os dados no ponteiro
 void mostraconc(loja *p, int qtde);
 void buscacnpj(loja *p, int qtde);
 
-//carros.bin
-
-void alocacarro(montadora **p, int tam);
-int verificacarro();
+// funções carros.bin
 void cadastrocarro(montadora *p, int qtde);
 void gravacarro(montadora *p, int qtde);
 void mostracarro(montadora *p, int qtde);
 void buscastatus(montadora *p, int qtde);
+
 
 // Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main - Main.
 
@@ -108,15 +110,17 @@ int main()
 setlocale(LC_ALL, "portuguese");
 loja *ploja=NULL;
 montadora *pcarros=NULL;
-char op;
+char op, op2;
 int qtde, qtdecarro, opmenu=1, controlemenu=1, opconc, mconc=1, opcarro, mcarro=1;
-alocaloja(&ploja,1);
-alocacarro(&pcarros, 1);
+aloca(&ploja, &pcarros, 1, 1);
+aloca(&ploja, &pcarros, 1, 2);
 
 do // menu principal - montadora ou carros
 {
+qtde = verifica(&ploja, &pcarros, 1); // Função que retorna o número do registro
+qtdecarro = verifica(&ploja, &pcarros, 2);
 system("cls");
-printf("SISTEMA ESTOQUE MONTADORA\n\nBem vindo, digite uma das opções abaixo.\n[1] Registro concessionária\n[2] Registro de carros\n[3] Encerrar programa\n\n");
+printf("SISTEMA ESTOQUE MONTADORA\nCONCESSIONÁRIAS NO SISTEMA: %i |\tCARROS NO SISTEMA: %i\n\nBem-vindo(a)!, digite uma das opções abaixo.\n[1] Registro concessionária\n[2] Registro de carros\n[3] Encerrar programa\n\n", qtde, qtdecarro);
 scanf("%i", &opmenu);
 switch(opmenu)
 {
@@ -124,11 +128,10 @@ switch(opmenu)
         do //concessionaria
         {
         system("cls");
-        qtde=verificaconc(); // Função que retorna o número do registro
-
-        printf("REGISTRO CONCESSIONÁRIA\n\nBem vindo, digite uma das opções abaixo.\n[1] Consulta geral\n[2] Consulta de vendas\n[3] Registrar concessionária\n[4] Menu principal\n\n");
+        printf("REGISTRO CONCESSIONÁRIA\n\n[1] Consulta geral\n[2] Consulta de vendas\n[3] Registrar concessionária\n[4] Menu principal\n\n");
         scanf("%i", &opconc);
         fflush(stdin);
+        qtde = verifica(&ploja, &pcarros, 1); // Função que retorna o número do registro
         switch(opconc)
         {
             case 1: mostraconc(ploja,qtde);
@@ -141,13 +144,13 @@ switch(opmenu)
             case 3: do{
             if(qtde>=5)
             {
-                printf("Quantidade máxima de montadoras já foi atingida.");
+                printf("Quantidade máxima de montadoras já foi atingida.\n");
                 system("pause");
                 break;
             }
             cadastroconc(ploja,(qtde++)+1);
             printf("\nDeseja continuar <S/N>: ");
-            scanf("%c",&op);
+            scanf("%c", &op);
             fflush(stdin);
             }while(op!='n' && op!= 'N');
             mostraconc(ploja,qtde);
@@ -163,27 +166,36 @@ switch(opmenu)
         }while(mconc==1);
         break; //fim menu concessionaria
 
-        case 2: mcarro = 1; //controle carro
+        case 2: mcarro = 1; //controle dowhile menu carro
         do{
         system("cls");
-        qtdecarro = verificacarro();
         printf("REGISTRO DE CARROS - MONTADORA\n\n[1] Consulta geral\n[2] Consulta parcial\n[3] Registrar carros\n[4] Menu principal\n\n");
         scanf("%i", &opcarro);
         fflush(stdin);
+        qtdecarro = verifica(&ploja, &pcarros, 2);
         switch(opcarro)
         {
-            case 1: system("cls");
-            mostracarro(pcarros, qtdecarro);
+            case 1: mostracarro(pcarros, qtdecarro);
             break;
 
-            case 2: system("cls");
-            buscastatus(pcarros, qtdecarro);
+            case 2: buscastatus(pcarros, qtdecarro);
             break;
 
-            case 3: system("cls");
-            cadastrocarro(pcarros, (qtdecarro++)+1);
-            mostracarro(pcarros, qtdecarro);
-            break;
+            case 3: do
+                {
+                if(qtdecarro >= 50)
+                {
+                    printf("Quantidade máxima de carros já foi atingida.\n");
+                    system("pause");
+                    break;
+                }
+                cadastrocarro(pcarros, (qtdecarro++)+1);
+                printf("\nDeseja continuar <S/N>: ");
+                scanf("%c", &op2);
+                fflush(stdin);
+                }while(op2!='n' && op2!= 'N');
+                mostracarro(pcarros, qtdecarro);
+                break;
 
             case 4: mcarro = 0;
             break;
@@ -192,9 +204,7 @@ switch(opmenu)
             system("pause");
             break;
         }
-
         }while(mcarro==1);
-        system("pause");
         break;
 
         case 3: controlemenu = 0; //encerrar programa
@@ -203,45 +213,104 @@ switch(opmenu)
         default: printf("Opção inválida\a\n");
         system("pause");
         break;
-}
+}//switch menu principal
 }while(controlemenu==1);
-printf("creditos");
-}//main fim
+creditos();
+}//main
 
 // Funções depois da main - Funções depois da main - Funções depois da main - Funções depois da main - Funções depois da main - Funções depois da main.
 
-// concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin
-
-void alocaloja(loja **p,int tam)
+void aloca(loja **ploja, montadora **pmontadora, int tam, int seletor)
 {
-if((*p=(loja*)realloc(*p,tam*sizeof(loja)))==NULL)
-  exit(1);
+if(seletor==1) //ploja
+    {
+    if((*ploja=(loja*)realloc(*ploja,tam*sizeof(loja)))==NULL)
+      exit(1);
+    }
+else // pmontadora
+    {
+    if((*pmontadora=(montadora*)realloc(*pmontadora,tam*sizeof(montadora)))==NULL)
+      exit(1);
+    }
 }
 
-int verificaconc()
+
+int verifica(loja **ploja, montadora **pmontadora, int seletor)
 {
 FILE *fptr=NULL;
 long int cont=0;
-if((fptr=fopen("concessionaria.bin","rb"))==NULL)
-  return cont;
-else
-  {
-  	fseek(fptr,0,2);   // posiciona fptr no final do arquivo
-  	cont=ftell(fptr)/sizeof(loja); //n de bytes do começo do arquivo até a posição atual (fim), dividido pela quantidade de bytes que a estrutura tem, isso da um número inteiro certinho que é o nosso cont, usado nas outras funções como tamanho/qtde
-  	fclose(fptr);    // dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
-  	return cont;
-  }
+
+if(seletor==1) //ploja
+{
+    if((fptr=fopen("concessionaria.bin","rb"))==NULL)
+      return cont;
+    else
+      {
+        fseek(fptr,0,2);   // posiciona fptr no final do arquivo
+        cont=ftell(fptr)/sizeof(loja); //n de bytes do começo do arquivo até a posição atual (fim), dividido pela quantidade de bytes que a estrutura tem, isso da um número inteiro certinho que é o nosso cont, usado nas outras funções como tamanho/qtde
+        fclose(fptr);    // dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+        return cont;
+      }
 }
+else //pmontadora
+{
+
+}
+    if((fptr=fopen("carro.bin","rb"))==NULL)
+      return cont;
+    else
+      {
+        fseek(fptr,0,2);   // posiciona fptr no final do arquivo
+        cont=ftell(fptr)/sizeof(montadora); //n de bytes do começo do arquivo até a posição atual (fim), dividido pela quantidade de bytes que a estrutura tem, isso da um número inteiro certinho que é o nosso cont, usado nas outras funções como tamanho/qtde
+        fclose(fptr);    // dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+        return cont;
+      }
+}
+
+void creditos()
+{
+//esquema de cores
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+WORD saved_attributes;
+GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
+saved_attributes = consoleInfo.wAttributes;
+
+printf("\nFeito por: ");
+sleep(1);
+SetConsoleTextAttribute(hConsole, 1);
+printf("Lucas Tolotto");
+SetConsoleTextAttribute(hConsole, saved_attributes);
+printf(", ");
+sleep(1);
+SetConsoleTextAttribute(hConsole, 4);
+printf("Pedro Todineyb");
+SetConsoleTextAttribute(hConsole, saved_attributes);
+printf(", ");
+sleep(1);
+SetConsoleTextAttribute(hConsole, 3);
+printf("João Mendes");
+SetConsoleTextAttribute(hConsole, saved_attributes);
+printf(", ");
+sleep(1);
+SetConsoleTextAttribute(hConsole, 10);
+printf("Rafael Rosário");
+SetConsoleTextAttribute(hConsole, saved_attributes);
+printf(".\n\n");
+}
+
+// concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin concessionaria.bin
 
 void cadastroconc(loja *p,int qtde)
 {
 p->regloja=qtde;
+fflush(stdin);
 printf("\nID Registro: %i",p->regloja);
-printf("\nNome: ");
+printf("\nNome [30]: ");
 gets(p->nome);
 fflush(stdin);
 
-printf("CNPJ (Ex: 11.444.777/0001-61): ");
+printf("CNPJ (Ex: 11.444.777/0001-61) [19]: ");
 gets(p->CNPJ);
 fflush(stdin);
 
@@ -258,31 +327,31 @@ gravaconc(p);
 
 void cadastroend(loja *p)
 {
-printf("Logradouro: ");
+printf("Logradouro [80]: ");
 gets(p->end.logradouro);
 fflush(stdin);
 
-printf("Bairro: ");
+printf("Bairro [15]: ");
 gets(p->end.bairro);
 fflush(stdin);
 
-printf("CEP: ");
+printf("CEP [10]: ");
 gets(p->end.CEP);
 fflush(stdin);
 
-printf("Cidade: ");
+printf("Cidade [15]: ");
 gets(p->end.cidade);
 fflush(stdin);
 
-printf("Estado: ");
+printf("Estado [3]: ");
 gets(p->end.estado);
 fflush(stdin);
 
-printf("Telefone: ");
+printf("Telefone [12]: ");
 gets(p->end.fone);
 fflush(stdin);
 
-printf("E-mail: ");
+printf("E-mail [40]: ");
 gets(p->end.email);
 fflush(stdin);
 }
@@ -312,7 +381,7 @@ else
 	  	fread(p,sizeof(loja),1,fptr);
         if(i==0)
             printf("------------------------------------------------------------------------------------------------------------------\n");
-	  	printf("\t\t\t\t\t\t%s", (p->nome)); //toupper
+	  	printf("\t\t\t\t\t\t%s", (p->nome)); //fazer toupper
 	  	printf("\nRegistro: %i\nCNPJ: %s\nLogradouro: %s\nBairro: %s\nCEP: %s\nCidade: %s\nEstado: %s\nTelefone: %s\nEmail: %s\nSold: %i\nReserved: %i\n",p->regloja,p->CNPJ,p->end.logradouro,p->end.bairro,p->end.CEP,p->end.cidade,p->end.estado,p->end.fone,p->end.email, p->sold, p->reserved);
         for(j=0;j<3;j++)
             printf("Tabela %i = %c\n", j, (p->tabela.sigla));
@@ -330,7 +399,21 @@ int i, j, achou=0;
 FILE *fptr=NULL;
 char pcnpj[30];
 system("cls");
-printf("Digite o CNPJ que deseja buscar: ");
+
+if((fptr=fopen("concessionaria.bin","rb"))==NULL)
+  printf("\nErro ao abrir o arquivo");
+else
+{
+    for(i=0;i<qtde;i++)
+    {
+        fseek(fptr,i*sizeof(loja),0);
+        fread(p,sizeof(loja),1,fptr);
+        printf("ID - %i | CNPJ - %s\n", p->regloja, p->CNPJ);
+    }
+    fclose(fptr);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+}
+
+printf("\nDigite o CNPJ que deseja buscar: ");
 gets(pcnpj);
 fflush(stdin);
 
@@ -344,8 +427,7 @@ else
 	  	fread(p,sizeof(loja),1,fptr);
 	  	if(strcmp(pcnpj, p->CNPJ)==0)
             {
-            system("cls");
-            printf("\nCNPJ Encontrado.");
+            printf("\n-------------------------------------------------\nCNPJ Encontrado.");
             printf("\nNome: %s\nSold: %i\nReserved: %i\n", p->nome, p->sold, p->reserved);
             for(j=0;j<3;j++)
                 printf("Tabela %i = %c\n", j, (p->tabela.sigla));
@@ -357,52 +439,33 @@ else
 
 if(achou==0)
 {
-    printf("CNPJ não encontrado! verifique na consulta e tente novamente.");
+    printf("\nCNPJ não encontrado! verifique na consulta e tente novamente.");
 }
 printf("\n\n");
 }
 
 // carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin carro.bin
-//portal
-
-void alocacarro(montadora **p,int tam)
-{
-if((*p=(montadora*)realloc(*p,tam*sizeof(montadora)))==NULL)
-  exit(1);
-}
-
-int verificacarro()
-{
-FILE *fptr=NULL;
-long int cont=0;
-if((fptr=fopen("carro.bin","rb"))==NULL)
-  return cont;
-else
-  {
-  	fseek(fptr,0,2);   // posiciona fptr no final do arquivo
-  	cont=ftell(fptr)/sizeof(montadora); //n de bytes do começo do arquivo até a posição atual (fim), dividido pela quantidade de bytes que a estrutura tem, isso da um número inteiro certinho que é o nosso cont, usado nas outras funções como tamanho/qtde
-  	fclose(fptr);    // dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
-  	return cont;
-  }
-}
+// portal (ctrl f)
 
 void cadastrocarro(montadora *p, int qtde)
 {
 float price=0;
-
 p->regcarro = qtde;
-printf("Digite o modelo do carro: ");
+printf("ID Registro: %i\n",p->regcarro);
+
+printf("Digite o modelo do carro [20]: ");
 gets(p->modelo);
 fflush(stdin);
 
-printf("Digite a cor do carro: ");
+printf("Digite a cor do carro [10]: ");
 gets(p->cor);
 fflush(stdin);
 
 printf("Digite o valor do carro: ");
 scanf("%f", &price);
-p->valor = price;
+fflush(stdin);
 
+p->valor = price;
 p->status.sigla = 'L';
 gravacarro(p, qtde);
 }
@@ -468,7 +531,7 @@ else
             achou=1;
             }
       }
-    fclose(fptr);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+    fclose(fptr); //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
   }
 
 if(achou==0)
