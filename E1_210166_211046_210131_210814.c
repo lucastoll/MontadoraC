@@ -57,7 +57,7 @@ typedef struct loja{ //estrutura principal de cadastro
  struct endereco end;
  int sold;
  int reserved;
- union  dadoscarro  tabela;
+ union  dadoscarro  tabela[3];
 }loja;
 
 //carro.bin
@@ -88,6 +88,7 @@ union dadosloja status;
 void aloca(loja **ploja, montadora **pmontadora, int tam, int seletor);
 int verifica(loja **ploja, montadora **pmontadora, int seletor);
 void creditos();
+void reserva(loja *ploja, montadora *pmontadora, int qtdeconc, int qtdecarro);
 
 // funções concessionária.bin
 void cadastroconc(loja *p, int qtde); //cadastro struct loja
@@ -111,7 +112,7 @@ setlocale(LC_ALL, "portuguese");
 loja *ploja=NULL;
 montadora *pcarros=NULL;
 char op, op2;
-int qtde, qtdecarro, opmenu=1, controlemenu=1, opconc, mconc=1, opcarro, mcarro=1;
+int qtde, qtdecarro, opmenu=1, controlemenu=1, opconc, mconc=1, opcarro, mcarro=1, opreserva, mreserva=1;
 aloca(&ploja, &pcarros, 1, 1);
 aloca(&ploja, &pcarros, 1, 2);
 
@@ -120,7 +121,7 @@ do // menu principal - montadora ou carros
 qtde = verifica(&ploja, &pcarros, 1); // Função que retorna o número do registro
 qtdecarro = verifica(&ploja, &pcarros, 2);
 system("cls");
-printf("SISTEMA ESTOQUE MONTADORA\nCONCESSIONÁRIAS NO SISTEMA: %i |\tCARROS NO SISTEMA: %i\n\nBem-vindo(a)!, digite uma das opções abaixo.\n[1] Registro concessionária\n[2] Registro de carros\n[3] Encerrar programa\n\n", qtde, qtdecarro);
+printf("SISTEMA ESTOQUE MONTADORA\nCONCESSIONÁRIAS NO SISTEMA: %i |\tCARROS NO SISTEMA: %i\n\nBem-vindo(a)!, digite uma das opções abaixo.\n[1] Registro concessionária\n[2] Registro de carros\n[3] Registros e vendas\n[4] Encerrar programa\n\n", qtde, qtdecarro);
 scanf("%i", &opmenu);
 switch(opmenu)
 {
@@ -207,7 +208,46 @@ switch(opmenu)
         }while(mcarro==1);
         break;
 
-        case 3: controlemenu = 0; //encerrar programa
+        case 3: mreserva=1;
+        if(qtde==0)
+        {
+            printf("\nNão é possivel realizar reservas ou vendas sem nenhuma concessionária registrada no sistema!\a\n\n");
+            system("pause");
+            break;
+        }
+        else if(qtdecarro==0)
+        {
+            printf("\nNão é possivel realizar reservas ou vendas sem nenhum carro registrado no sistema!\a\n\n");
+            system("pause");
+            break;
+        }
+        do
+        {
+            system("cls");
+            printf("RESERVAS E VENDAS\n\n[1] Reservas\n[2] Vendas\n[3] Menu principal\n\n");
+            scanf("%i", &opmenu);
+            fflush(stdin);
+
+            switch(opmenu)
+            {
+            case 1: reserva(ploja, pcarros, qtde, qtdecarro);
+            break;
+
+            case 2:
+            system("pause");
+            break;
+
+            case 3: mreserva = 0;
+            break;
+
+            default: printf("4");
+            system("pause");
+            break;
+            }
+        }while(mreserva==1);
+        break;
+
+        case 4: controlemenu = 0; //encerrar programa
         break;
 
         default: printf("Opção inválida\a\n");
@@ -219,6 +259,222 @@ creditos();
 }//main
 
 // Funções depois da main - Funções depois da main - Funções depois da main - Funções depois da main - Funções depois da main - Funções depois da main.
+//portalreserva
+void reserva(loja *ploja, montadora *pmontadora, int qtdeconc, int qtdecarro)
+{
+    int i, j, l=0, achou=0, idcarro, pos, poscarro, erro=0;
+    char pcnpj[30], auxnomeconc[30], auxnomecarro[20], auxcorcarro[10], auxcarrosigla, op;
+    FILE *fptrconc=NULL; // ponteiro concessionária
+    FILE *fptrcarro=NULL; // ponteiro carros
+    do // dowhile input cnpj
+    {
+        system("cls");
+        if((fptrconc=fopen("concessionaria.bin","rb"))==NULL) //arquivo aberto para mostrar todos os cnpjs disponiveis
+          printf("\nErro ao abrir o arquivo");
+        else
+        {
+            for(i=0;i<qtdeconc;i++)
+            {
+                fseek(fptrconc,i*sizeof(loja),0);
+                fread(ploja,sizeof(loja),1,fptrconc);
+                printf("ID - %i | CNPJ - %s\n", ploja->regloja, ploja->CNPJ);
+            }
+            fclose(fptrconc);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+        }
+        printf("----------------------------------------------------------------------------------------------\n\nDigite o CNPJ da concessionária que vai efetuar a reserva: ");
+        gets(pcnpj);
+        fflush(stdin);
+        if((fptrconc=fopen("concessionaria.bin","rb"))==NULL) //arquivo aberto para comparar o cnpj recebido com os cnpj do arquivo.
+          printf("\nErro ao abrir o arquivo");
+        else
+          {
+            for(i=0;i<qtdeconc;i++)
+              {
+                fseek(fptrconc,i*sizeof(loja),0);
+                fread(ploja,sizeof(loja),1,fptrconc);
+                if(strcmp(pcnpj, ploja->CNPJ)==0)
+                    {
+                    printf("\n----------------------------------------------------------------------------------------------\nCNPJ Encontrado.");
+                    printf("\nNome: %s\nSold: %i\nReserved: %i\n", ploja->nome, ploja->sold, ploja->reserved);
+                    for(j=0;j<3;j++)
+                    {
+                        if(ploja->tabela[j].reservado.sigla == 'L')
+                            printf("Tabela %i = %c\n", j, (ploja->tabela[j].sigla));
+                        else
+                            printf("Tabela %i = %c - %i\n", j, ploja->tabela[j].reservado.sigla, ploja->tabela[j].reservado.regcarro);
+                    }
+                    achou=1;
+                    strcpy(auxnomeconc, ploja->nome);
+                    }
+              }
+            fclose(fptrconc);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+        }
+
+        if(achou==0)
+        {
+            printf("\nCNPJ não encontrado! verifique a digitação e tente novamente.\n");
+            system("pause");
+        }
+    }while(achou==0);
+
+    achou=0; // variavel resetada para usar do mesmo jeito com o input do carro
+    do // dowhile input - ID carro
+    {
+        printf("----------------------------------------------------------------------------------------------\n\nDigite o ID do carro à ser reservado: ");
+        scanf("%i", &idcarro);
+        fflush(stdin);
+
+        if((fptrcarro=fopen("carro.bin","rb"))==NULL) // arquivo aberto para comparar o ID recebido com os ID's do arquivo.
+          printf("\nErro ao abrir o arquivo");
+        else
+          {
+            for(i=0;i<qtdecarro;i++)
+              {
+                fseek(fptrcarro,i*sizeof(montadora),0);
+                fread(pmontadora,sizeof(montadora),1,fptrcarro);
+                if(pmontadora->regcarro == idcarro)
+                    {
+                    printf("\n----------------------------------------------------------------------------------------------");
+                    printf("\nCarro encontrado\nModelo: %s | Cor: %s | Valor: R$%.2f | Status: %c\n----------------------------------------------------------------------------------------------\n\n",pmontadora->modelo, pmontadora->cor, pmontadora->valor, pmontadora->status.sigla);
+                    achou=1;
+                    strcpy(auxnomecarro, pmontadora->modelo); // variáveis auxiliares usadas posteriormente para printar uma confirmação.
+                    strcpy(auxcorcarro, pmontadora->cor);
+                    auxcarrosigla = pmontadora->status.sigla;
+                    }
+              }
+            fclose(fptrcarro); //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+          }
+
+        if(achou==0)
+        {
+            printf("\n----------------------------------------------------------------------------------------------");
+            printf("\nNenhum carro com o ID indicado foi encontrado.\n");
+        }
+        else
+        {
+            printf("Confirmar reserva do carro %s %s na concessionária %s? <S|N>\n", auxnomecarro, auxcorcarro, auxnomeconc);
+            scanf("%c", &op);
+            switch(op)
+            {
+                case 'n':
+
+                case 'N': printf("Cancelando reserva.");
+                Sleep(1000);
+                printf(".");
+                Sleep(1000);
+                printf(".\n");
+                break;
+
+                case 's':
+
+                case 'S':
+                if((fptrconc=fopen("concessionaria.bin","rb"))==NULL) // arquivo aberto para verificação e alteração dos dados concessionaria.bin
+                  printf("\nErro ao abrir o arquivo");
+                else
+                    {
+                    for(i=0;i<qtdeconc;i++)
+                        {
+                        fseek(fptrconc,i*sizeof(loja),0);
+                        fread(ploja,sizeof(loja),1,fptrconc);
+                        if(strcmp(pcnpj, ploja->CNPJ)==0)
+                            {
+                            //Verificação carro 'L'
+                            if(auxcarrosigla=='R')
+                            {
+                                printf("\nEsse carro já foi reservado\n");
+                                fclose(fptrconc);
+                                erro=1;
+                                break;
+                            }
+                            //Verificação reserved >= 3
+                            else if(ploja->reserved >= 3)
+                            {
+                                printf("Quantidade máxima de reservas nessa concessionária já foi atingida.\n");
+                                fclose(fptrconc);
+                                erro=1;
+                                break;
+                            }
+                            ploja->reserved += 1;
+
+                            // Implementação sigla status concessionária.
+                            for(l=0;l<3;l++)
+                                {
+                                if(ploja->tabela[l].sigla=='L')
+                                    {
+                                    ploja->tabela[l].reservado.sigla = 'R';
+                                    ploja->tabela[l].reservado.regcarro = idcarro;
+                                    l=3; //interromper for
+                                    }
+                                }
+                            printf("\n----------------------------------------------------------------------------------------------\nReserva efetuada com sucesso.");
+                            // Printar concessionária novamente, agora que a reserva foi efetuada.
+                            printf("\nNome: %s\nSold: %i\nReserved: %i\n", ploja->nome, ploja->sold, ploja->reserved);
+                            for(j=0;j<3;j++)
+                            {
+                                if(ploja->tabela[j].reservado.sigla == 'L')
+                                    printf("Tabela %i = %c\n", j, (ploja->tabela[j].sigla));
+                                else
+                                    printf("Tabela %i = %c - %i\n", j, ploja->tabela[j].reservado.sigla, ploja->tabela[j].reservado.regcarro);
+                            }
+                            pos = i;
+                            }//if
+                        }//for
+                    fclose(fptrconc);
+                    }//else
+
+                if(erro==0)
+                //gravar informações na concessionaria.bin
+                {
+                    if((fptrconc=fopen("concessionaria.bin", "rb+"))==NULL) //acabamento
+                      printf("\nErro ao abrir o arquivo");
+                    else
+                      {
+                        fseek(fptrconc, pos*sizeof(loja),0);
+                        fwrite(ploja,sizeof(loja),1,fptrconc);
+                      }//else
+                    fclose(fptrconc);   //fora do else - por conta do ab ou rb+
+
+                    //verificação e alteração na carro.bin
+
+                    if((fptrcarro=fopen("carro.bin","rb"))==NULL)
+                      printf("\nErro ao abrir o arquivo");
+                    else
+                      {
+                        for(i=0;i<qtdecarro;i++)
+                          {
+                            fseek(fptrcarro,i*sizeof(montadora),0);
+                            fread(pmontadora,sizeof(montadora),1,fptrcarro);
+                            if(pmontadora->regcarro == idcarro)
+                                {
+                                    pmontadora->status.reserva.sigla='R';
+                                    strcpy(pmontadora->status.reserva.CNPJ, pcnpj);
+                                    poscarro = pmontadora->regcarro;
+                                }
+                          }
+                        fclose(fptrcarro); //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
+                      }
+
+                    //gravar informações no carro.bin
+                    if((fptrcarro=fopen("carro.bin", "rb+"))==NULL) //acabamento
+                      printf("\nErro ao abrir o arquivo");
+                    else
+                      {
+                        fseek(fptrcarro, (poscarro-1)*sizeof(montadora),0);
+                        fwrite(pmontadora,sizeof(montadora),1,fptrcarro);
+                      }//else
+                    fclose(fptrcarro);   //fora do else - por conta do ab ou rb+
+                }
+                break;
+
+                default: printf("Opção inválida\a\n");
+                break;
+
+        }//switch
+       }//else
+    }while(achou==0);
+system("pause");
+}
+
 
 void aloca(loja **ploja, montadora **pmontadora, int tam, int seletor)
 {
@@ -277,22 +533,22 @@ GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
 saved_attributes = consoleInfo.wAttributes;
 
 printf("\nFeito por: ");
-sleep(1);
+Sleep(1000);
 SetConsoleTextAttribute(hConsole, 1);
 printf("Lucas Tolotto");
 SetConsoleTextAttribute(hConsole, saved_attributes);
 printf(", ");
-sleep(1);
+Sleep(1000);
 SetConsoleTextAttribute(hConsole, 4);
 printf("Pedro Todineyb");
 SetConsoleTextAttribute(hConsole, saved_attributes);
 printf(", ");
-sleep(1);
+Sleep(1000);
 SetConsoleTextAttribute(hConsole, 3);
 printf("João Mendes");
 SetConsoleTextAttribute(hConsole, saved_attributes);
 printf(", ");
-sleep(1);
+Sleep(1000);
 SetConsoleTextAttribute(hConsole, 10);
 printf("Rafael Rosário");
 SetConsoleTextAttribute(hConsole, saved_attributes);
@@ -303,6 +559,7 @@ printf(".\n\n");
 
 void cadastroconc(loja *p,int qtde)
 {
+int i;
 p->regloja=qtde;
 fflush(stdin);
 printf("\nID Registro: %i",p->regloja);
@@ -319,7 +576,8 @@ fflush(stdin);
 
 p->sold = 0;
 p->reserved = 0;
-p->tabela.sigla = 'L';
+for(i=0;i<3;i++)
+    p->tabela[i].sigla = 'L';
 
 gravaconc(p);
 }
@@ -384,7 +642,12 @@ else
 	  	printf("\t\t\t\t\t\t%s", (p->nome)); //fazer toupper
 	  	printf("\nRegistro: %i\nCNPJ: %s\nLogradouro: %s\nBairro: %s\nCEP: %s\nCidade: %s\nEstado: %s\nTelefone: %s\nEmail: %s\nSold: %i\nReserved: %i\n",p->regloja,p->CNPJ,p->end.logradouro,p->end.bairro,p->end.CEP,p->end.cidade,p->end.estado,p->end.fone,p->end.email, p->sold, p->reserved);
         for(j=0;j<3;j++)
-            printf("Tabela %i = %c\n", j, (p->tabela.sigla));
+            {
+            if(p->tabela[j].reservado.sigla == 'L')
+                printf("Tabela %i = %c\n", j, (p->tabela[j].sigla));
+            else
+                printf("Tabela %i = %c - %i\n", j, p->tabela[j].reservado.sigla, p->tabela[j].reservado.regcarro);
+            }
         printf("------------------------------------------------------------------------------------------------------------------\n");
       }
     fclose(fptr);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
@@ -430,7 +693,12 @@ else
             printf("\n-------------------------------------------------\nCNPJ Encontrado.");
             printf("\nNome: %s\nSold: %i\nReserved: %i\n", p->nome, p->sold, p->reserved);
             for(j=0;j<3;j++)
-                printf("Tabela %i = %c\n", j, (p->tabela.sigla));
+                {
+                 if(p->tabela[j].reservado.sigla == 'L')
+                    printf("Tabela %i = %c\n", j, (p->tabela[j].sigla));
+                else
+                    printf("Tabela %i = %c - %i\n", j, p->tabela[j].reservado.sigla, p->tabela[j].reservado.regcarro);
+                }
             achou=1;
             }
       }
@@ -495,7 +763,10 @@ else
 	  	fread(p,sizeof(montadora),1,fptr);
         if(i==0)
             printf("------------------------------------------------------------------------------------------------------------------\n");
-        printf("\nID: %i\nModelo: %s\nCor: %s\nValor: R$%.2f\nStatus: %c\n",p->regcarro, p->modelo, p->cor, p->valor, p->status.sigla);
+        if(p->status.sigla=='L')
+            printf("\nID: %i\nModelo: %s\nCor: %s\nValor: R$%.2f\nStatus: %c\n",p->regcarro, p->modelo, p->cor, p->valor, p->status.sigla);
+        else
+            printf("\nID: %i\nModelo: %s\nCor: %s\nValor: R$%.2f\nStatus: %c - %s\n",p->regcarro, p->modelo, p->cor, p->valor, p->status.reserva.sigla, p->status.reserva.CNPJ);
         printf("\n------------------------------------------------------------------------------------------------------------------\n");
       }
     fclose(fptr);   //dentro do else - por conta rb (rb não tem força pra criar, então a ação de fechar só deve acontecer dentro do else, caso o arquivo exista)
